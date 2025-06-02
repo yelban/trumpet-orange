@@ -45,7 +45,6 @@ export default defineContentScript({
     
     // 保存當前顏色主題（初始設為預設值，等待從 storage 獲取真正設定）
     let currentThemeKey = DEFAULT_THEME_KEY;
-    let currentTheme = THEMES[currentThemeKey];
     
     // 取得所有主題類別列表
     const ALL_THEME_CLASSES = Object.keys(THEMES);
@@ -56,12 +55,10 @@ export default defineContentScript({
         const result = await browser.storage.local.get(THEME_STORAGE_KEY);
         if (result && result[THEME_STORAGE_KEY] && THEMES[result[THEME_STORAGE_KEY]]) {
           currentThemeKey = result[THEME_STORAGE_KEY];
-          currentTheme = THEMES[currentThemeKey];
           logDebug(`Content: 已從 storage 載入主題設定: ${currentThemeKey}`);
           return true;
         } else {
           currentThemeKey = DEFAULT_THEME_KEY;
-          currentTheme = THEMES[currentThemeKey];
           // 保存預設主題到 storage 以確保一致性
           await browser.storage.local.set({ [THEME_STORAGE_KEY]: DEFAULT_THEME_KEY });
           logDebug(`Content: 未找到已保存的主題，使用預設值: ${currentThemeKey}`);
@@ -113,6 +110,54 @@ export default defineContentScript({
           }
         `;
       });
+
+      // 添加浮動面板樣式
+      cssContent += `
+        /* 浮動面板樣式 */
+        .ai-talk {
+          position: fixed;
+          inset: 0 0 0 auto;
+          width: 300px;
+          height: fit-content;
+          margin-block: auto;
+          max-height: 80vh;
+          background: #000;
+          box-shadow: 0 0 10px #0002;
+          border-radius: 8px 0 0 8px;
+          padding: 1ex;
+          z-index: 99;
+          overflow-y: auto;
+          translate: calc(100% - 1.5em) 0;
+          opacity: 1;
+          transition: translate 0.3s, opacity 1s;
+        }
+        .ai-talk:hover {
+          translate: 0;
+        }
+        .ai-talk:has(ul:empty) {
+          opacity: 0;
+        }
+        .ai-talk ul {
+          list-style: disc;
+          padding: 0 0 0 1em;
+          margin: 0;
+        }
+        .ai-talk li {
+          margin: 0;
+          color: #fff;
+        }
+        .ai-talk a {
+          color: #fff;
+          text-decoration: none;
+          display: flex;
+          padding: 5px;
+          border-radius: 4px;
+        }
+        .ai-talk a:hover {
+          background: #fff;
+          color: #000;
+        }
+      `;
       
       style.textContent = cssContent;
       document.head.appendChild(style);
@@ -133,7 +178,6 @@ export default defineContentScript({
       
       // 更新當前主題
       currentThemeKey = themeKey;
-      currentTheme = THEMES[themeKey];
       
       // 保存到 storage 以確保持久化
       try {
@@ -224,6 +268,163 @@ export default defineContentScript({
       }
     }
 
+    // ========== 浮動面板功能 ==========
+    
+    // 檢查浮動面板是否已存在
+    const checkFloatingPanelExists = (): boolean => {
+      return document.querySelector('.ai-talk') !== null;
+    };
+
+    // 創建浮動面板元素
+    const createFloatingPanel = (): void => {
+      if (checkFloatingPanelExists()) return;
+
+      const container = document.createElement('div');
+      container.className = 'ai-talk';
+
+      const ul = document.createElement('ul');
+      container.appendChild(ul);
+
+      document.body.appendChild(container);
+      logDebug('Content: 已創建浮動面板');
+    };
+
+    // 為單個訊息創建目錄項目
+    const createMessageItem = (messageEl: Element, index: number): HTMLLIElement => {
+      const text = messageEl.textContent?.trim() || '';
+      const preview = text.length > 30 ? `${text.slice(0, 30)}...` : text;
+      const anchorId = `message-${index}`;
+      messageEl.id = anchorId;
+
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `#${anchorId}`;
+      a.textContent = preview;
+
+      a.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        messageEl.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      li.appendChild(a);
+      return li;
+    };
+
+    // 更新浮動面板內容
+    const updateFloatingPanel = (): void => {
+      try {
+        if (!checkFloatingPanelExists()) {
+          createFloatingPanel();
+        }
+
+        const container = document.querySelector('.ai-talk');
+        const ul = container?.querySelector('ul');
+        if (!ul) return;
+
+        ul.innerHTML = '';
+
+        const currentURL = window.location.hostname;
+        let messageElements: NodeListOf<Element> | null = null;
+
+        // 根據網站選擇適當的選擇器
+        if (currentURL.includes('chatgpt.com')) {
+          messageElements = document.querySelectorAll('[data-message-author-role="user"]');
+        } else if (currentURL.includes('grok.com')) {
+          messageElements = document.querySelectorAll('.items-end .bg-surface-l2');
+        }
+
+        if (messageElements && messageElements.length > 0) {
+          const fragment = document.createDocumentFragment();
+          messageElements.forEach((msgEl, idx) => {
+            fragment.appendChild(createMessageItem(msgEl, idx));
+          });
+          ul.appendChild(fragment);
+          logDebug(`Content: 浮動面板已更新，共 ${messageElements.length} 條訊息`);
+        }
+      } catch (error) {
+        logDebug('Content: 更新浮動面板時發生錯誤', error);
+      }
+    };
+
+    // 設置 fetch 攔截
+    const setupFetchInterception = (): void => {
+      // 保存原始 fetch
+      if (!(window as any)._originalFetch) {
+        (window as any)._originalFetch = window.fetch;
+      }
+      const originalFetch = (window as any)._originalFetch;
+
+      window.fetch = async function(...args: any[]) {
+        try {
+          const urlStr = typeof args[0] === 'string'
+            ? args[0]
+            : args[0] instanceof Request
+              ? args[0].url
+              : '';
+
+          const currentURL = window.location.hostname;
+
+          // 根據網站攔截相應的 API 請求
+          let shouldIntercept = false;
+          if (currentURL.includes('chatgpt.com') && urlStr.includes('/backend-api/conversation')) {
+            shouldIntercept = true;
+          } else if (currentURL.includes('grok.com') && 
+                     (urlStr.includes('/rest/app-chat/conversations') || 
+                      urlStr.includes('/rest/app-chat/conversations/new'))) {
+            shouldIntercept = true;
+          }
+
+          if (shouldIntercept) {
+            logDebug('Content: 攔截到 API 請求', urlStr);
+            const response = await originalFetch.apply(this, args);
+            setTimeout(updateFloatingPanel, 500);
+            return response;
+          }
+
+          return originalFetch.apply(this, args);
+        } catch (error) {
+          logDebug('Content: fetch 請求失敗', error);
+          throw error;
+        }
+      };
+    };
+
+    // 設置點擊事件監聽
+    const setupClickListeners = (): void => {
+      const sidebar = document.querySelector('#sidebar');
+      const newChatBtn = document.querySelector('[data-testid="create-new-chat-button"]');
+
+      const clickHandler = (e: Event) => {
+        const target = e.target as Element;
+        const link = target.closest('a');
+        if (
+          (link && sidebar?.contains(link)) ||
+          target.closest('[data-testid="create-new-chat-button"]')
+        ) {
+          setTimeout(updateFloatingPanel, 1000);
+        }
+      };
+
+      sidebar?.removeEventListener('click', clickHandler);
+      newChatBtn?.removeEventListener('click', clickHandler);
+      sidebar?.addEventListener('click', clickHandler);
+      newChatBtn?.addEventListener('click', clickHandler);
+    };
+
+    // 初始化浮動面板功能
+    const initializeFloatingPanel = (): void => {
+      const currentURL = window.location.hostname;
+      
+      // 只在支援的網站啟用浮動面板
+      if (currentURL.includes('chatgpt.com') || currentURL.includes('grok.com')) {
+        createFloatingPanel();
+        updateFloatingPanel();
+        setupFetchInterception();
+        setupClickListeners();
+        logDebug('Content: 浮動面板功能已初始化');
+      }
+    };
+
     // 添加自定義介面
     interface CustomMutationObserver extends MutationObserver {
       throttleTimeout?: ReturnType<typeof setTimeout>;
@@ -232,11 +433,12 @@ export default defineContentScript({
     // 設置 MutationObserver 監聽 DOM 變化
     function setupMutationObserver() {
       // 監聽新訊息
-      const observer = new MutationObserver(mutations => {
+      const observer = new MutationObserver(() => {
         // 為了避免過於頻繁地套用樣式，使用節流函數
         if ((observer as CustomMutationObserver).throttleTimeout) return;
         (observer as CustomMutationObserver).throttleTimeout = setTimeout(() => {
           applyStyles(); // 使用當前保存的主題
+          updateFloatingPanel(); // 更新浮動面板
           delete (observer as CustomMutationObserver).throttleTimeout;
         }, 300); // 300毫秒內只執行一次
       }) as CustomMutationObserver;
@@ -269,12 +471,9 @@ export default defineContentScript({
       // 初始化主題並監聽 DOM 變化
       setTimeout(() => {
         logDebug('Content: 準備初始化主題');
-        // 使用標記來追蹤初始化成功與否
-        let initializeSuccess = false;
         
         try {
           initializeTheme().then(() => {
-            initializeSuccess = true;
             logDebug('Content: 初始化主題成功');
           });
         } catch (error) {
@@ -286,6 +485,11 @@ export default defineContentScript({
           }, 3000);
         }
       }, 2000);
+
+      // 初始化浮動面板功能
+      setTimeout(() => {
+        initializeFloatingPanel();
+      }, 3000);
       
       // 設置 MutationObserver 監聽 DOM 變化
       setupMutationObserver();
@@ -301,7 +505,7 @@ export default defineContentScript({
     }
 
     // 監聽來自 Background Script 的訊息，用於主題切換
-    browser.runtime.onMessage.addListener((message: any, sender: any) => {
+    browser.runtime.onMessage.addListener((message: any) => {
       logDebug('Content Script: 收到訊息', message);
 
       if (message.type === 'CHANGE_THEME' && message.theme) {

@@ -17,6 +17,7 @@ web-ext.config.ts
 .cursorindexingignore
 .cursorignore
 .cursorrules
+CLAUDE.md
 
 # Editor directories and files
 .vscode/*
