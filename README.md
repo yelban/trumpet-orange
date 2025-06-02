@@ -37,7 +37,7 @@ Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
 
 1. 下載/clone 此 Repo  
    ```bash
-   git clone https://github.com/<your-org>/trumpet-orange.git
+   git clone https://github.com/yelban/trumpet-orange.git
    ```
 2. 進入專案目錄並安裝依賴  
    ```bash
