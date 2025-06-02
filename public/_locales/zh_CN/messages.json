@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "扩展程序名称"
+  },
+  "appDescription": {
+    "message": "ChatGPT、Grok、Gemini 和 AI Studio 的提示词高亮工具。",
+    "description": "扩展程序描述"
+  },
+  "popupTitle": {
+    "message": "TrumpetOrange 设置",
+    "description": "弹出窗口标题"
+  },
+  "trumpetOrange": {
+    "message": "特朗普橙",
+    "description": "橙色主题名称"
+  },
+  "xinlagRed": {
+    "message": "主席红",
+    "description": "红色主题名称"
+  },
+  "recolorButton": {
+    "message": "重新上色",
+    "description": "重新上色按钮文字"
+  }
+} 

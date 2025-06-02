@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "Название расширения"
+  },
+  "appDescription": {
+    "message": "Инструмент для выделения промптов в ChatGPT, Grok, Gemini и AI Studio.",
+    "description": "Описание расширения"
+  },
+  "popupTitle": {
+    "message": "Настройки TrumpetOrange",
+    "description": "Заголовок всплывающего окна"
+  },
+  "trumpetOrange": {
+    "message": "Trumpet Оранжевый",
+    "description": "Название оранжевой темы"
+  },
+  "xinlagRed": {
+    "message": "Xigulag Красный",
+    "description": "Название красной темы"
+  },
+  "recolorButton": {
+    "message": "Перекрасить",
+    "description": "Текст кнопки перекраски"
+  }
+} 

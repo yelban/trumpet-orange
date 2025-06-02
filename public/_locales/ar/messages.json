@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "اسم الإضافة"
+  },
+  "appDescription": {
+    "message": "أداة إبراز الإيعازات لـ ChatGPT وGrok وGemini وAI Studio.",
+    "description": "وصف الإضافة"
+  },
+  "popupTitle": {
+    "message": "إعدادات TrumpetOrange",
+    "description": "عنوان النافذة المنبثقة"
+  },
+  "trumpetOrange": {
+    "message": "ترامبت البرتقالي",
+    "description": "اسم السمة البرتقالية"
+  },
+  "xinlagRed": {
+    "message": "شيغولاغ الأحمر",
+    "description": "اسم السمة الحمراء"
+  },
+  "recolorButton": {
+    "message": "إعادة التلوين",
+    "description": "نص زر إعادة التلوين"
+  }
+} 

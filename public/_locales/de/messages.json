@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "Name der Erweiterung"
+  },
+  "appDescription": {
+    "message": "Prompt-Hervorhebungstool für ChatGPT, Grok, Gemini und AI Studio.",
+    "description": "Beschreibung der Erweiterung"
+  },
+  "popupTitle": {
+    "message": "TrumpetOrange Einstellungen",
+    "description": "Titel des Popup-Fensters"
+  },
+  "trumpetOrange": {
+    "message": "Trumpet Orange",
+    "description": "Name des orangen Themas"
+  },
+  "xinlagRed": {
+    "message": "Xigulag Rot",
+    "description": "Name des roten Themas"
+  },
+  "recolorButton": {
+    "message": "Neu einfärben",
+    "description": "Text der Neueinfärbungs-Schaltfläche"
+  }
+} 

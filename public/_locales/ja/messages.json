@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "拡張機能名"
+  },
+  "appDescription": {
+    "message": "ChatGPT、Grok、Gemini、AI Studioのプロンプトハイライトツール。",
+    "description": "拡張機能の説明"
+  },
+  "popupTitle": {
+    "message": "TrumpetOrange 設定",
+    "description": "ポップアップウィンドウのタイトル"
+  },
+  "trumpetOrange": {
+    "message": "大統領オレンジ",
+    "description": "オレンジテーマの名前"
+  },
+  "xinlagRed": {
+    "message": "権力の赤",
+    "description": "赤テーマの名前"
+  },
+  "recolorButton": {
+    "message": "再着色",
+    "description": "再着色ボタンのテキスト"
+  }
+} 

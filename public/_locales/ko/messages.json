@@ -1,0 +1,26 @@
+{
+  "appName": {
+    "message": "TrumpetOrange",
+    "description": "확장 프로그램 이름"
+  },
+  "appDescription": {
+    "message": "ChatGPT, Grok, Gemini 및 AI Studio를 위한 프롬프트 하이라이터.",
+    "description": "확장 프로그램 설명"
+  },
+  "popupTitle": {
+    "message": "TrumpetOrange 설정",
+    "description": "팝업 창 제목"
+  },
+  "trumpetOrange": {
+    "message": "대통령 오렌지",
+    "description": "오렌지 테마 이름"
+  },
+  "xinlagRed": {
+    "message": "권력의 빨강",
+    "description": "빨간색 테마 이름"
+  },
+  "recolorButton": {
+    "message": "다시 색칠하기",
+    "description": "다시 색칠하기 버튼 텍스트"
+  }
+} 
