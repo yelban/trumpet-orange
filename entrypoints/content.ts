@@ -293,21 +293,102 @@ export default defineContentScript({
     const createMessageItem = (messageEl: Element, index: number): HTMLLIElement => {
       const text = messageEl.textContent?.trim() || '';
       const preview = text.length > 30 ? `${text.slice(0, 30)}...` : text;
-      const anchorId = `message-${index}`;
-      messageEl.id = anchorId;
+      const anchorId = `tro-msg-${Date.now()}-${index}`;
+      
+      // 只在元素還沒有我們的 ID 時才設定
+      if (!messageEl.id || !messageEl.id.startsWith('tro-msg-')) {
+        messageEl.id = anchorId;
+      }
 
       const li = document.createElement('li');
       const a = document.createElement('a');
-      a.href = `#${anchorId}`;
+      a.href = `#${messageEl.id}`; // 使用實際的 ID
       a.textContent = preview;
 
       a.addEventListener('click', (evt) => {
         evt.preventDefault();
-        messageEl.scrollIntoView({ behavior: 'smooth' });
+        evt.stopPropagation();
+        
+        logDebug(`Content: 點擊浮動面板項目，目標 ID: ${messageEl.id}`);
+        
+        // 添加點擊視覺反饋
+        a.style.backgroundColor = '#007acc';
+        a.style.color = '#fff';
+        setTimeout(() => {
+          a.style.backgroundColor = '';
+          a.style.color = '';
+        }, 200);
+        
+        // 定義滾動函數
+        const scrollToTarget = (element: Element, retryCount: number = 0) => {
+          if (retryCount > 3) {
+            logDebug('Content: 滾動重試次數超限，停止嘗試');
+            return;
+          }
+          
+          try {
+            // 確保元素仍然在 DOM 中
+            if (!document.contains(element)) {
+              logDebug('Content: 元素已不在 DOM 中，嘗試重新查找');
+              const newTarget = document.getElementById(messageEl.id);
+              if (newTarget) {
+                scrollToTarget(newTarget, retryCount + 1);
+              }
+              return;
+            }
+            
+            // 執行滾動
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center',
+              inline: 'nearest' 
+            });
+            
+            logDebug(`Content: 滾動到元素 ${element.id}，重試次數: ${retryCount}`);
+            
+            // 檢查滾動是否成功
+            setTimeout(() => {
+              if (!isElementInViewport(element) && retryCount < 3) {
+                logDebug('Content: 滾動未成功，嘗試 instant 滾動');
+                element.scrollIntoView({ 
+                  behavior: 'instant', 
+                  block: 'center' 
+                });
+              }
+            }, 500);
+            
+          } catch (error) {
+            logDebug('Content: 滾動時發生錯誤', error);
+            if (retryCount < 3) {
+              setTimeout(() => scrollToTarget(element, retryCount + 1), 300);
+            }
+          }
+        };
+        
+        // 首先嘗試使用 ID 查找最新的元素
+        const targetElement = document.getElementById(messageEl.id);
+        if (targetElement) {
+          scrollToTarget(targetElement);
+        } else {
+          // 如果 ID 查找失敗，嘗試使用原始元素引用
+          logDebug('Content: 使用 ID 未找到目標元素，使用原始引用');
+          scrollToTarget(messageEl);
+        }
       });
 
       li.appendChild(a);
       return li;
+    };
+
+    // 檢查元素是否在視窗中可見
+    const isElementInViewport = (el: Element): boolean => {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
     };
 
     // 更新浮動面板內容
@@ -321,8 +402,6 @@ export default defineContentScript({
         const ul = container?.querySelector('ul');
         if (!ul) return;
 
-        ul.innerHTML = '';
-
         const currentURL = window.location.hostname;
         let messageElements: NodeListOf<Element> | null = null;
 
@@ -334,12 +413,39 @@ export default defineContentScript({
         }
 
         if (messageElements && messageElements.length > 0) {
-          const fragment = document.createDocumentFragment();
-          messageElements.forEach((msgEl, idx) => {
-            fragment.appendChild(createMessageItem(msgEl, idx));
-          });
-          ul.appendChild(fragment);
-          logDebug(`Content: 浮動面板已更新，共 ${messageElements.length} 條訊息`);
+          // 收集當前所有訊息的唯一標識
+          const currentMessages = Array.from(messageElements).map(el => ({
+            element: el,
+            text: el.textContent?.trim() || '',
+            hasId: el.id && el.id.startsWith('tro-msg-')
+          }));
+
+          // 只有在訊息數量或內容發生變化時才更新面板
+          const existingItems = ul.querySelectorAll('li');
+          const needsUpdate = existingItems.length !== currentMessages.length ||
+                             currentMessages.some((msg, idx) => {
+                               const existingText = existingItems[idx]?.textContent?.trim() || '';
+                               const currentText = msg.text.length > 30 ? `${msg.text.slice(0, 30)}...` : msg.text;
+                               return existingText !== currentText;
+                             });
+
+          if (needsUpdate) {
+            ul.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            
+            currentMessages.forEach((msgData, idx) => {
+              fragment.appendChild(createMessageItem(msgData.element, idx));
+            });
+            
+            ul.appendChild(fragment);
+            logDebug(`Content: 浮動面板已更新，共 ${currentMessages.length} 條訊息`);
+          }
+        } else {
+          // 如果沒有訊息，清空面板
+          if (ul.children.length > 0) {
+            ul.innerHTML = '';
+            logDebug('Content: 沒有找到訊息，已清空浮動面板');
+          }
         }
       } catch (error) {
         logDebug('Content: 更新浮動面板時發生錯誤', error);
