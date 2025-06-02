@@ -1,92 +1,92 @@
-# TrumpetOrange  
+# TrumpetOrange
 Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
 
-> 讓你的提示詞永遠搶眼，對話流程順暢無阻。
+> Make your prompts always stand out and keep your conversation flow smooth.
 
 ---
 
-## 🌟 一鍵安裝（推薦）
-**現已上架 Chrome Web Store！**
+## 🌟 One-Click Install (Recommended)
+**Now available on the Chrome Web Store!**
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/kmjcealmacndbklfjgjppdncgebgicmp?label=Chrome%20Web%20Store&logo=google-chrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/trumpetorange/kmjcealmacndbklfjgjppdncgebgicmp)
 
-**[📲 點此前往 Chrome Web Store 安裝 TrumpetOrange](https://chromewebstore.google.com/detail/trumpetorange/kmjcealmacndbklfjgjppdncgebgicmp)**
+**[📲 Click here to install TrumpetOrange from the Chrome Web Store](https://chromewebstore.google.com/detail/trumpetorange/kmjcealmacndbklfjgjppdncgebgicmp)**
 
-- ⭐ **5.0 星評價**，71+ 位使用者信賴
-- 🌍 **支援 11 種語言**（繁中、簡中、英、日、韓、法、德、西、義、俄、阿拉伯文）
-- �� **零資料收集**，完全隱私導向
+- ⭐ **5.0 Star Rating**, trusted by 71+ users
+- 🌍 **Supports 11 languages** (Traditional Chinese, Simplified Chinese, English, Japanese, Korean, French, German, Spanish, Italian, Russian, Arabic)
+- 🔒 **Zero Data Collection**, completely privacy-oriented
 
 ---
 
-## 🚀 亮點功能
-| 功能 | 說明 |
+## 🚀 Highlight Features
+| Feature | Description |
 |------|------|
-| 🎨 **高對比提示詞高亮** | 預設 Trumpet 橘，讓你的提問一眼即見。 |
-| 🔴 **一鍵主題切換** | 橘／紅雙主題快速切換，立刻套用至所有分頁。 |
-| 💾 **跨會話主題記憶** | 使用者首選配色自動保存，下次開啟即生效。 |
-| 🧭 **全新浮動導覽面板** | 右側浮動清單即時收錄你的歷史提問，點擊即可跳轉，無需反覆捲動。 |
-| 🛡️ **零追蹤・隱私至上** | 僅在本地運行，不蒐集、不上傳任何資料，100% 開源可稽核。 |
-| ⚡ **輕量化架構** | 基於 [WXT](https://wxt.dev/) + TypeScript，無框架依賴，效能卓越。 |
+| 🎨 **High-Contrast Prompt Highlighting** | Default Trumpet Orange, making your questions visible at a glance. |
+| 🔴 **One-Click Theme Switching** | Quickly switch between Orange/Red themes, instantly applying to all tabs. |
+| 💾 **Cross-Session Theme Memory** | User's preferred color scheme is automatically saved and applied on next launch. |
+| 🧭 **New Floating Navigation Panel** | A floating list on the right instantly collects your historical prompts; click to jump, no more endless scrolling. |
+| 🛡️ **Zero Tracking・Privacy First** | Runs locally only, does not collect or upload any data, 100% open-source and auditable. |
+| ⚡ **Lightweight Architecture** | Based on [WXT](https://wxt.dev/) + TypeScript, no framework dependencies, excellent performance. |
 
 ---
 
-## 📥 安裝方式
+## 📥 Installation Methods
 
-### 2. 開發者手動載入
-> 適合想要最新功能或進行開發的使用者
+### 2. Manual Load by Developer
+> Suitable for users who want the latest features or for development purposes
 
-1. 下載/clone 此 Repo  
+1. Download/clone this Repo
    ```bash
    git clone https://github.com/yelban/trumpet-orange.git
    ```
-2. 進入專案目錄並安裝依賴  
+2. Enter the project directory and install dependencies
    ```bash
-   pnpm i       # 或 npm i / yarn
+   pnpm i       # Or npm i / yarn
    ```
-3. 開發模式啟動（熱重載）  
+3. Start in development mode (hot reload)
    ```bash
-   pnpm dev     # 預設 Chrome
+   pnpm dev     # Default Chrome
    pnpm dev:firefox
    ```
-4. 打包並匯入瀏覽器  
+4. Build and import into browser
    ```bash
-   pnpm build           # 生成 dist/
+   pnpm build           # Generates dist/
    ```
 
 ---
 
-## 🖱️ 使用說明
-1. 開啟 ChatGPT、Grok、Gemini 或 Google AI Studio。  
-2. 在對話框輸入問題並送出，即可看到 **橘色高亮**。  
-3. 點擊瀏覽器工具列圖示，於彈出視窗中：  
-   - 切換 **Trumpet 橘 / XiGulag 紅** 主題  
-   - 點擊 **Recolor** 強制重新套用樣式  
-4. 右側將出現 **浮動導覽面板**：  
-   - 自動列出所有歷史提問  
-   - 點擊任一條即可平滑滾動至該訊息位置
+## 🖱️ Usage Instructions
+1. Open ChatGPT, Grok, Gemini, or Google AI Studio.
+2. Enter your question in the dialog box and submit to see **orange highlighting**.
+3. Click the browser toolbar icon, in the popup window:
+   - Switch between **Trumpet Orange / XiGulag Red** themes
+   - Click **Recolor** to force reapply styles
+4. A **Floating Navigation Panel** will appear on the right:
+   - Automatically lists all historical prompts
+   - Click any item to smoothly scroll to that message location
 
 ---
 
-## 🧑‍💻 專案結構
+## 🧑‍💻 Project Structure
 ```
-entrypoints/     # background / content / popup 腳本
-components/      # 共用模組（i18n、logger）
-public/_locales/ # Chrome i18n 語系檔
-wxt.config.ts    # WebExtension Manifest 設定
+entrypoints/     # background / content / popup scripts
+components/      # Shared modules (i18n, logger)
+public/_locales/ # Chrome i18n language files
+wxt.config.ts    # WebExtension Manifest configuration
 ```
 
 ---
 
-## 🤝 貢獻方式
-1. Fork ➜ Create branch ➜ Commit ➜ Pull Request  
-2. 請遵循 Conventional Commits 格式 (`feat:`, `fix:`, `chore:` …)。  
-3. 所有功能請對應 Issue 或開新討論，確保目標一致。
+## 🤝 Contribution Guidelines
+1. Fork ➜ Create branch ➜ Commit ➜ Pull Request
+2. Please follow Conventional Commits format (`feat:`, `fix:`, `chore:` …).
+3. All features should correspond to an Issue or start a new discussion to ensure alignment of goals.
 
 ---
 
-## 📜 授權
-MIT License — 歡迎自由使用、修改與發佈。
+## 📜 License
+MIT License — Feel free to use, modify, and distribute.
 
 ---
 
-> 2025/06/02 Update: **全新浮動導覽面板** — 點擊即可快速跳轉到過往提示詞，再也不用滑到天荒地老，靈感回顧隨手可得！
+> 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!
