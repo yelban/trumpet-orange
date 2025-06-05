@@ -4,8 +4,8 @@
  */
 
 // 全局日誌控制開關
-export const DEBUG_MODE = true; // 開發時設為 true
-// export const DEBUG_MODE = false; // 發布前設為 false
+// export const DEBUG_MODE = true; // 開發時設為 true
+export const DEBUG_MODE = false; // 發布前設為 false
 
 /**
  * 日誌輸出函數

@@ -1,5 +1,5 @@
 # TrumpetOrange
-Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
+Prompt Highlighter for ChatGPT / Grok / Gemini
 
 > Make your prompts always stand out and keep your conversation flow smooth.
 
@@ -56,7 +56,7 @@ Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
 ---
 
 ## 🖱️ Usage Instructions
-1. Open ChatGPT, Grok, Gemini, or Google AI Studio.
+1. Open ChatGPT, Grok, Gemini.
 2. Enter your question in the dialog box and submit to see **orange highlighting**.
 3. Click the browser toolbar icon, in the popup window:
    - Switch between **Trumpet Orange / XiGulag Red** themes
@@ -90,6 +90,6 @@ MIT License — Feel free to use, modify, and distribute.
 ---
 
 
-> 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!
+> 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!(**ChatGPT**,**Grok**)
 >
-> 2025/07/03 Update: Floating panel now fully supports **Gemini** and **Google AI Studio**.
+> 2025/06/05 Update: Floating panel now fully supports **Gemini**.

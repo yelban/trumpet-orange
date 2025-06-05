@@ -2,7 +2,7 @@
   "name": "trumpet-orange",
   "description": "Prompt Highlighter for ChatGPT, Grok, Gemini & AI Studio.",
   "private": true,
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "scripts": {
     "dev": "wxt",
