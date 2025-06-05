@@ -5,8 +5,7 @@ export default defineContentScript({
   matches: [
     'https://chatgpt.com/*',
     'https://grok.com/*',
-    'https://gemini.google.com/app*',
-    'https://aistudio.google.com/prompts/*'
+    'https://gemini.google.com/app*'
   ],
 
   runAt: 'document_start',
@@ -113,24 +112,6 @@ export default defineContentScript({
         return null;
       } else if (currentURL.includes('gemini.google.com')) {
         return '.user-query-bubble-with-background.ng-star-inserted';
-      } else if (currentURL.includes('aistudio.google.com')) {
-        // 使用多個候選選擇器，返回第一個有效的
-        const candidates = [
-          '.user-prompt-container .text-chunk',
-          '.prompt-card .text-chunk',
-          '[data-test-id="user-prompt"] .text-chunk',
-          '.conversation .user-message .text-chunk',
-          '.message-container[data-role="user"] .text-chunk'
-        ];
-        
-        for (const candidate of candidates) {
-          if (document.querySelector(candidate)) {
-            return candidate;
-          }
-        }
-        
-        // 如果沒有找到任何候選者，返回通用的 .text-chunk 但需要額外過濾
-        return '.text-chunk';
       } else {
         logDebug('未知的網站，無法套用高亮');
         return null;
@@ -263,12 +244,7 @@ export default defineContentScript({
       
       // 根據網站進行額外過濾
       const currentURL = window.location.hostname;
-      if (currentURL.includes('aistudio.google.com') && selector === '.text-chunk') {
-        allElements = Array.from(allElements).filter(el => {
-          const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"], [data-test-id="user-prompt"]');
-          return container !== null;
-        }) as unknown as NodeListOf<Element>;
-      } else if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
+      if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
         // 對於 ChatGPT 的廣泛選擇器，過濾出用戶訊息
         allElements = Array.from(allElements).filter(el => {
           return el.closest('[data-message-author-role="user"]') !== null ||
@@ -313,12 +289,7 @@ export default defineContentScript({
       
       // 根據網站進行額外過濾
       const currentURL = window.location.hostname;
-      if (currentURL.includes('aistudio.google.com') && selector === '.text-chunk') {
-        allElements = Array.from(allElements).filter(el => {
-          const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"], [data-test-id="user-prompt"]');
-          return container !== null;
-        }) as unknown as NodeListOf<Element>;
-      } else if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
+      if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
         // 對於 ChatGPT 的廣泛選擇器，過濾出用戶訊息
         allElements = Array.from(allElements).filter(el => {
           return el.closest('[data-message-author-role="user"]') !== null ||
@@ -535,38 +506,6 @@ export default defineContentScript({
           }
         } else if (currentURL.includes('gemini.google.com')) {
           messageElements = document.querySelectorAll('.user-query-bubble-with-background.ng-star-inserted');
-        } else if (currentURL.includes('aistudio.google.com')) {
-          // 使用更廣泛的選擇器來捕獲所有用戶訊息，包括不在視窗中的
-          const candidates = [
-            '.user-prompt-container .text-chunk',
-            '.prompt-card .text-chunk',
-            '[data-test-id="user-prompt"] .text-chunk',
-            '.conversation .user-message .text-chunk',
-            '.message-container[data-role="user"] .text-chunk'
-          ];
-          
-          let allMessages: Element[] = [];
-          for (const selector of candidates) {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length > 0) {
-              allMessages = Array.from(elements);
-              break;
-            }
-          }
-          
-          // 如果上述選擇器都沒找到，嘗試更通用的方法
-          if (allMessages.length === 0) {
-            // 查找包含用戶輸入文字的所有元素
-            const allTextChunks = document.querySelectorAll('.text-chunk');
-            allMessages = Array.from(allTextChunks).filter(el => {
-              const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"]');
-              return container !== null;
-            });
-          }
-          
-          messageElements = allMessages.length > 0 ? 
-            { length: allMessages.length, item: (i: number) => allMessages[i], [Symbol.iterator]: () => allMessages[Symbol.iterator]() } as NodeListOf<Element> : 
-            null;
         }
 
         if (messageElements && messageElements.length > 0) {
@@ -635,8 +574,7 @@ export default defineContentScript({
                      (urlStr.includes('/rest/app-chat/conversations') ||
                       urlStr.includes('/rest/app-chat/conversations/new'))) {
             shouldIntercept = true;
-          } else if ((currentURL.includes('gemini.google.com') ||
-                      currentURL.includes('aistudio.google.com')) &&
+          } else if (currentURL.includes('gemini.google.com') &&
                      urlStr.includes('generativelanguage.googleapis.com')) {
             shouldIntercept = true;
           }
@@ -690,11 +628,10 @@ export default defineContentScript({
         
         // 設置新的計時器，在滾動停止後重新套用樣式
         scrollTimeout = setTimeout(() => {
-          if (window.location.hostname.includes('aistudio.google.com')) {
-            logDebug('Content: 滾動停止，重新套用樣式以修復高亮消失問題');
-            applyStyles();
-            updateFloatingPanel();
-          }
+          // 通用的滾動後樣式修復
+          logDebug('Content: 滾動停止，重新套用樣式');
+          applyStyles();
+          updateFloatingPanel();
         }, 200); // 滾動停止 200ms 後執行
       };
 
@@ -716,8 +653,7 @@ export default defineContentScript({
       if (
         currentURL.includes('chatgpt.com') ||
         currentURL.includes('grok.com') ||
-        currentURL.includes('gemini.google.com') ||
-        currentURL.includes('aistudio.google.com')
+        currentURL.includes('gemini.google.com')
       ) {
         createFloatingPanel();
         updateFloatingPanel();
@@ -793,10 +729,6 @@ export default defineContentScript({
         } else if (currentURL.includes('gemini.google.com')) {
           isSubmitButton = target.closest('button[aria-label*="Send"]') !== null ||
                           target.closest('.send-button') !== null;
-        } else if (currentURL.includes('aistudio.google.com')) {
-          isSubmitButton = target.closest('button[aria-label*="Send"]') !== null ||
-                          target.closest('.send-button') !== null ||
-                          target.closest('[data-testid="send"]') !== null;
         }
 
         if (isSubmitButton) {
@@ -833,12 +765,6 @@ export default defineContentScript({
                   (currentURL.includes('gemini.google.com') && (
                     element.closest('.user-query-bubble-with-background') ||
                     element.querySelector('.user-query-bubble-with-background')
-                  )) ||
-                  (currentURL.includes('aistudio.google.com') && (
-                    element.closest('.text-chunk') ||
-                    element.querySelector('.text-chunk') ||
-                    element.closest('.user-prompt-container') ||
-                    element.querySelector('.user-prompt-container')
                   ))
                 ) {
                   needsUpdate = true;
@@ -894,11 +820,6 @@ export default defineContentScript({
       setTimeout(applyInitialStyles, 1000); // 1秒後
       setTimeout(applyInitialStyles, 3000); // 3秒後
       setTimeout(applyInitialStyles, 5000); // 5秒後 (確保所有動態內容都載入)
-      
-      // 針對 Google AI Studio 額外處理
-      if (window.location.hostname.includes('aistudio.google.com')) {
-        setTimeout(applyInitialStyles, 8000); // 8秒後再次確保
-      }
     };
 
     // 確保初始化在 DOM 載入完成後執行

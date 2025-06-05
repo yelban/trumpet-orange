@@ -17,8 +17,7 @@ export default defineConfig({
           // "*://*/*" // 允許在所有網站上運行內容腳本
           "https://chatgpt.com/*",
           "https://grok.com/*",
-          "https://gemini.google.com/app*",
-          "https://aistudio.google.com/prompts/*"
+          "https://gemini.google.com/app*"
         ],
         icons: {
           "16": "icon/16.png",
