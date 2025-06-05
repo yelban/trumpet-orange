@@ -1,0 +1,242 @@
+diff --git a/README.md b/README.md
+index e5bc1ce2e389a99fa709e0302d64a663d85f4493..c569abf6eaaf8fdadda3bebbd9c309dad9a6fbd9 100644
+--- a/README.md
++++ b/README.md
+@@ -67,26 +67,29 @@ Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
+ 
+ ---
+ 
+ ## 🧑‍💻 Project Structure
+ ```
+ entrypoints/     # background / content / popup scripts
+ components/      # Shared modules (i18n, logger)
+ public/_locales/ # Chrome i18n language files
+ wxt.config.ts    # WebExtension Manifest configuration
+ ```
+ 
+ ---
+ 
+ ## 🤝 Contribution Guidelines
+ 1. Fork ➜ Create branch ➜ Commit ➜ Pull Request
+ 2. Please follow Conventional Commits format (`feat:`, `fix:`, `chore:` …).
+ 3. All features should correspond to an Issue or start a new discussion to ensure alignment of goals.
+ 
+ ---
+ 
+ ## 📜 License
+ MIT License — Feel free to use, modify, and distribute.
+ 
+ ---
+ 
+-> 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!
+\ No newline at end of file
++
++> 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!
++>
++> 2025/07/03 Update: Floating panel now fully supports **Gemini** and **Google AI Studio**.
+diff --git a/README_TW.md b/README_TW.md
+index 964fa189fc7c00080707c59eb656c8e03e980b7e..e21bd10b2f0c995ef007b2a3e0bbb062f7f86d26 100644
+--- a/README_TW.md
++++ b/README_TW.md
+@@ -67,26 +67,28 @@ Prompt Highlighter for ChatGPT / Grok / Gemini / Google AI Studio
+ 
+ ---
+ 
+ ## 🧑‍💻 專案結構
+ ```
+ entrypoints/     # background / content / popup 腳本
+ components/      # 共用模組（i18n、logger）
+ public/_locales/ # Chrome i18n 語系檔
+ wxt.config.ts    # WebExtension Manifest 設定
+ ```
+ 
+ ---
+ 
+ ## 🤝 貢獻方式
+ 1. Fork ➜ Create branch ➜ Commit ➜ Pull Request  
+ 2. 請遵循 Conventional Commits 格式 (`feat:`, `fix:`, `chore:` …)。  
+ 3. 所有功能請對應 Issue 或開新討論，確保目標一致。
+ 
+ ---
+ 
+ ## 📜 授權
+ MIT License — 歡迎自由使用、修改與發佈。
+ 
+ ---
+ 
+-> 2025/06/02 Update: **全新浮動導覽面板** — 點擊即可快速跳轉到過往提示詞，再也不用滑到天荒地老，靈感回顧隨手可得！ 
+\ No newline at end of file
++> 2025/06/02 Update: **全新浮動導覽面板** — 點擊即可快速跳轉到過往提示詞，再也不用滑到天荒地老，靈感回顧隨手可得！
++>
++> 2025/07/03 Update: 浮動面板現已完整支援 **Gemini** 與 **Google AI Studio**。
+diff --git a/entrypoints/content.ts b/entrypoints/content.ts
+index 21d8d4d0e4d0e0009da74b61c0ab8309824d17f3..bece4ef0947b1d649f8fd461b42770087f62d1ad 100644
+--- a/entrypoints/content.ts
++++ b/entrypoints/content.ts
+@@ -388,50 +388,54 @@ export default defineContentScript({
+         rect.left >= 0 &&
+         rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+         rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+       );
+     };
+ 
+     // 更新浮動面板內容
+     const updateFloatingPanel = (): void => {
+       try {
+         if (!checkFloatingPanelExists()) {
+           createFloatingPanel();
+         }
+ 
+         const container = document.querySelector('.ai-talk');
+         const ul = container?.querySelector('ul');
+         if (!ul) return;
+ 
+         const currentURL = window.location.hostname;
+         let messageElements: NodeListOf<Element> | null = null;
+ 
+         // 根據網站選擇適當的選擇器
+         if (currentURL.includes('chatgpt.com')) {
+           messageElements = document.querySelectorAll('[data-message-author-role="user"]');
+         } else if (currentURL.includes('grok.com')) {
+           messageElements = document.querySelectorAll('.items-end .bg-surface-l2');
++        } else if (currentURL.includes('gemini.google.com')) {
++          messageElements = document.querySelectorAll('.user-query-bubble-with-background.ng-star-inserted');
++        } else if (currentURL.includes('aistudio.google.com')) {
++          messageElements = document.querySelectorAll('.user-prompt-container .text-chunk');
+         }
+ 
+         if (messageElements && messageElements.length > 0) {
+           // 收集當前所有訊息的唯一標識
+           const currentMessages = Array.from(messageElements).map(el => ({
+             element: el,
+             text: el.textContent?.trim() || '',
+             hasId: el.id && el.id.startsWith('tro-msg-')
+           }));
+ 
+           // 只有在訊息數量或內容發生變化時才更新面板
+           const existingItems = ul.querySelectorAll('li');
+           const needsUpdate = existingItems.length !== currentMessages.length ||
+                              currentMessages.some((msg, idx) => {
+                                const existingText = existingItems[idx]?.textContent?.trim() || '';
+                                const currentText = msg.text.length > 30 ? `${msg.text.slice(0, 30)}...` : msg.text;
+                                return existingText !== currentText;
+                              });
+ 
+           if (needsUpdate) {
+             ul.innerHTML = '';
+             const fragment = document.createDocumentFragment();
+             
+             currentMessages.forEach((msgData, idx) => {
+               fragment.appendChild(createMessageItem(msgData.element, idx));
+@@ -452,99 +456,108 @@ export default defineContentScript({
+       }
+     };
+ 
+     // 設置 fetch 攔截
+     const setupFetchInterception = (): void => {
+       // 保存原始 fetch
+       if (!(window as any)._originalFetch) {
+         (window as any)._originalFetch = window.fetch;
+       }
+       const originalFetch = (window as any)._originalFetch;
+ 
+       window.fetch = async function(...args: any[]) {
+         try {
+           const urlStr = typeof args[0] === 'string'
+             ? args[0]
+             : args[0] instanceof Request
+               ? args[0].url
+               : '';
+ 
+           const currentURL = window.location.hostname;
+ 
+           // 根據網站攔截相應的 API 請求
+           let shouldIntercept = false;
+           if (currentURL.includes('chatgpt.com') && urlStr.includes('/backend-api/conversation')) {
+             shouldIntercept = true;
+-          } else if (currentURL.includes('grok.com') && 
+-                     (urlStr.includes('/rest/app-chat/conversations') || 
++          } else if (currentURL.includes('grok.com') &&
++                     (urlStr.includes('/rest/app-chat/conversations') ||
+                       urlStr.includes('/rest/app-chat/conversations/new'))) {
+             shouldIntercept = true;
++          } else if ((currentURL.includes('gemini.google.com') ||
++                      currentURL.includes('aistudio.google.com')) &&
++                     urlStr.includes('generativelanguage.googleapis.com')) {
++            shouldIntercept = true;
+           }
+ 
+           if (shouldIntercept) {
+             logDebug('Content: 攔截到 API 請求', urlStr);
+             const response = await originalFetch.apply(this, args);
+             setTimeout(updateFloatingPanel, 500);
+             return response;
+           }
+ 
+           return originalFetch.apply(this, args);
+         } catch (error) {
+           logDebug('Content: fetch 請求失敗', error);
+           throw error;
+         }
+       };
+     };
+ 
+     // 設置點擊事件監聽
+     const setupClickListeners = (): void => {
+       const sidebar = document.querySelector('#sidebar');
+       const newChatBtn = document.querySelector('[data-testid="create-new-chat-button"]');
+ 
+       const clickHandler = (e: Event) => {
+         const target = e.target as Element;
+         const link = target.closest('a');
+         if (
+           (link && sidebar?.contains(link)) ||
+           target.closest('[data-testid="create-new-chat-button"]')
+         ) {
+           setTimeout(updateFloatingPanel, 1000);
+         }
+       };
+ 
+       sidebar?.removeEventListener('click', clickHandler);
+       newChatBtn?.removeEventListener('click', clickHandler);
+       sidebar?.addEventListener('click', clickHandler);
+       newChatBtn?.addEventListener('click', clickHandler);
+     };
+ 
+     // 初始化浮動面板功能
+     const initializeFloatingPanel = (): void => {
+       const currentURL = window.location.hostname;
+       
+       // 只在支援的網站啟用浮動面板
+-      if (currentURL.includes('chatgpt.com') || currentURL.includes('grok.com')) {
++      if (
++        currentURL.includes('chatgpt.com') ||
++        currentURL.includes('grok.com') ||
++        currentURL.includes('gemini.google.com') ||
++        currentURL.includes('aistudio.google.com')
++      ) {
+         createFloatingPanel();
+         updateFloatingPanel();
+         setupFetchInterception();
+         setupClickListeners();
+         logDebug('Content: 浮動面板功能已初始化');
+       }
+     };
+ 
+     // 添加自定義介面
+     interface CustomMutationObserver extends MutationObserver {
+       throttleTimeout?: ReturnType<typeof setTimeout>;
+     }
+ 
+     // 設置 MutationObserver 監聽 DOM 變化
+     function setupMutationObserver() {
+       // 監聽新訊息
+       const observer = new MutationObserver(() => {
+         // 為了避免過於頻繁地套用樣式，使用節流函數
+         if ((observer as CustomMutationObserver).throttleTimeout) return;
+         (observer as CustomMutationObserver).throttleTimeout = setTimeout(() => {
+           applyStyles(); // 使用當前保存的主題
+           updateFloatingPanel(); // 更新浮動面板
+           delete (observer as CustomMutationObserver).throttleTimeout;
+         }, 300); // 300毫秒內只執行一次
+       }) as CustomMutationObserver;

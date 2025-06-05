@@ -89,4 +89,7 @@ MIT License — Feel free to use, modify, and distribute.
 
 ---
 
+
 > 2025/06/02 Update: **New Floating Navigation Panel** — Click to quickly jump to past prompts, no more endless scrolling, inspiration review at your fingertips!
+>
+> 2025/07/03 Update: Floating panel now fully supports **Gemini** and **Google AI Studio**.

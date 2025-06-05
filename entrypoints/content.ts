@@ -74,13 +74,63 @@ export default defineContentScript({
     const getCurrentSelector = () => {
       const currentURL = window.location.hostname;
       if (currentURL.includes('chatgpt.com')) {
-        return '.bg-token-message-surface';
+        // ChatGPT 使用多個候選選擇器，因為結構可能會變化
+        const candidates = [
+          '.bg-token-message-surface', // 舊版選擇器
+          '[data-message-author-role="user"] .whitespace-pre-wrap', // 新版用戶訊息
+          '[data-message-author-role="user"] .markdown', // 另一種可能的結構
+          '[data-message-author-role="user"]', // 最廣泛的用戶訊息容器
+          '.group.w-full.text-token-text-primary' // 可能的訊息容器
+        ];
+        
+        for (const candidate of candidates) {
+          if (document.querySelector(candidate)) {
+            logDebug(`ChatGPT: 使用選擇器 ${candidate}`);
+            return candidate;
+          }
+        }
+        
+        logDebug('ChatGPT: 未找到任何有效選擇器');
+        return null;
       } else if (currentURL.includes('grok.com')) {
-        return '.items-end .bg-surface-l2';
+        // Grok 也使用多個候選選擇器
+        const candidates = [
+          '.items-end .bg-surface-l2', // 原始選擇器
+          '.user-message .bg-surface-l2', // 可能的新結構
+          '.message-user .bg-surface-l2', // 另一種可能的結構
+          '.bg-surface-l2', // 最廣泛的選擇器
+          '[data-role="user"]' // 用戶角色標識
+        ];
+        
+        for (const candidate of candidates) {
+          if (document.querySelector(candidate)) {
+            logDebug(`Grok: 使用選擇器 ${candidate}`);
+            return candidate;
+          }
+        }
+        
+        logDebug('Grok: 未找到任何有效選擇器');
+        return null;
       } else if (currentURL.includes('gemini.google.com')) {
         return '.user-query-bubble-with-background.ng-star-inserted';
       } else if (currentURL.includes('aistudio.google.com')) {
-        return '.user-prompt-container .text-chunk';
+        // 使用多個候選選擇器，返回第一個有效的
+        const candidates = [
+          '.user-prompt-container .text-chunk',
+          '.prompt-card .text-chunk',
+          '[data-test-id="user-prompt"] .text-chunk',
+          '.conversation .user-message .text-chunk',
+          '.message-container[data-role="user"] .text-chunk'
+        ];
+        
+        for (const candidate of candidates) {
+          if (document.querySelector(candidate)) {
+            return candidate;
+          }
+        }
+        
+        // 如果沒有找到任何候選者，返回通用的 .text-chunk 但需要額外過濾
+        return '.text-chunk';
       } else {
         logDebug('未知的網站，無法套用高亮');
         return null;
@@ -209,7 +259,29 @@ export default defineContentScript({
       if (!selector) return;
       
       // 選擇所有符合選擇器的元素
-      const allElements = document.querySelectorAll(selector);
+      let allElements = document.querySelectorAll(selector);
+      
+      // 根據網站進行額外過濾
+      const currentURL = window.location.hostname;
+      if (currentURL.includes('aistudio.google.com') && selector === '.text-chunk') {
+        allElements = Array.from(allElements).filter(el => {
+          const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"], [data-test-id="user-prompt"]');
+          return container !== null;
+        }) as unknown as NodeListOf<Element>;
+      } else if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
+        // 對於 ChatGPT 的廣泛選擇器，過濾出用戶訊息
+        allElements = Array.from(allElements).filter(el => {
+          return el.closest('[data-message-author-role="user"]') !== null ||
+                 el.getAttribute('data-message-author-role') === 'user';
+        }) as unknown as NodeListOf<Element>;
+      } else if (currentURL.includes('grok.com') && selector === '.bg-surface-l2') {
+        // 對於 Grok 的廣泛選擇器，過濾出用戶訊息
+        allElements = Array.from(allElements).filter(el => {
+          return el.closest('.items-end') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        }) as unknown as NodeListOf<Element>;
+      }
+      
       let updatedCount = 0;
       let newCount = 0;
       
@@ -237,7 +309,28 @@ export default defineContentScript({
       if (!selector) return;
       
       // 選擇所有符合選擇器的元素
-      const allElements = document.querySelectorAll(selector);
+      let allElements = document.querySelectorAll(selector);
+      
+      // 根據網站進行額外過濾
+      const currentURL = window.location.hostname;
+      if (currentURL.includes('aistudio.google.com') && selector === '.text-chunk') {
+        allElements = Array.from(allElements).filter(el => {
+          const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"], [data-test-id="user-prompt"]');
+          return container !== null;
+        }) as unknown as NodeListOf<Element>;
+      } else if (currentURL.includes('chatgpt.com') && (selector === '.group.w-full.text-token-text-primary' || selector === '.bg-token-message-surface')) {
+        // 對於 ChatGPT 的廣泛選擇器，過濾出用戶訊息
+        allElements = Array.from(allElements).filter(el => {
+          return el.closest('[data-message-author-role="user"]') !== null ||
+                 el.getAttribute('data-message-author-role') === 'user';
+        }) as unknown as NodeListOf<Element>;
+      } else if (currentURL.includes('grok.com') && selector === '.bg-surface-l2') {
+        // 對於 Grok 的廣泛選擇器，過濾出用戶訊息
+        allElements = Array.from(allElements).filter(el => {
+          return el.closest('.items-end') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        }) as unknown as NodeListOf<Element>;
+      }
       
       // 過濾出沒有套用任何主題的元素
       const newElements: Element[] = [];
@@ -407,9 +500,73 @@ export default defineContentScript({
 
         // 根據網站選擇適當的選擇器
         if (currentURL.includes('chatgpt.com')) {
-          messageElements = document.querySelectorAll('[data-message-author-role="user"]');
+          // ChatGPT 使用多個候選選擇器來查找用戶訊息
+          const candidates = [
+            '[data-message-author-role="user"]', // 最常用的選擇器
+            '.bg-token-message-surface', // 舊版選擇器
+            '.group.w-full.text-token-text-primary', // 可能的訊息容器
+            '[data-testid="user-message"]' // 可能的測試標識
+          ];
+          
+          for (const candidate of candidates) {
+            const elements = document.querySelectorAll(candidate);
+            if (elements.length > 0) {
+              messageElements = elements;
+              logDebug(`ChatGPT 浮動面板: 使用選擇器 ${candidate}，找到 ${elements.length} 個元素`);
+              break;
+            }
+          }
         } else if (currentURL.includes('grok.com')) {
-          messageElements = document.querySelectorAll('.items-end .bg-surface-l2');
+          // Grok 使用多個候選選擇器
+          const candidates = [
+            '.items-end .bg-surface-l2', // 原始選擇器
+            '.user-message .bg-surface-l2', // 可能的新結構
+            '.bg-surface-l2', // 最廣泛的選擇器
+            '[data-role="user"]' // 用戶角色標識
+          ];
+          
+          for (const candidate of candidates) {
+            const elements = document.querySelectorAll(candidate);
+            if (elements.length > 0) {
+              messageElements = elements;
+              logDebug(`Grok 浮動面板: 使用選擇器 ${candidate}，找到 ${elements.length} 個元素`);
+              break;
+            }
+          }
+        } else if (currentURL.includes('gemini.google.com')) {
+          messageElements = document.querySelectorAll('.user-query-bubble-with-background.ng-star-inserted');
+        } else if (currentURL.includes('aistudio.google.com')) {
+          // 使用更廣泛的選擇器來捕獲所有用戶訊息，包括不在視窗中的
+          const candidates = [
+            '.user-prompt-container .text-chunk',
+            '.prompt-card .text-chunk',
+            '[data-test-id="user-prompt"] .text-chunk',
+            '.conversation .user-message .text-chunk',
+            '.message-container[data-role="user"] .text-chunk'
+          ];
+          
+          let allMessages: Element[] = [];
+          for (const selector of candidates) {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > 0) {
+              allMessages = Array.from(elements);
+              break;
+            }
+          }
+          
+          // 如果上述選擇器都沒找到，嘗試更通用的方法
+          if (allMessages.length === 0) {
+            // 查找包含用戶輸入文字的所有元素
+            const allTextChunks = document.querySelectorAll('.text-chunk');
+            allMessages = Array.from(allTextChunks).filter(el => {
+              const container = el.closest('.user-prompt-container, .prompt-card, [data-role="user"]');
+              return container !== null;
+            });
+          }
+          
+          messageElements = allMessages.length > 0 ? 
+            { length: allMessages.length, item: (i: number) => allMessages[i], [Symbol.iterator]: () => allMessages[Symbol.iterator]() } as NodeListOf<Element> : 
+            null;
         }
 
         if (messageElements && messageElements.length > 0) {
@@ -474,9 +631,13 @@ export default defineContentScript({
           let shouldIntercept = false;
           if (currentURL.includes('chatgpt.com') && urlStr.includes('/backend-api/conversation')) {
             shouldIntercept = true;
-          } else if (currentURL.includes('grok.com') && 
-                     (urlStr.includes('/rest/app-chat/conversations') || 
+          } else if (currentURL.includes('grok.com') &&
+                     (urlStr.includes('/rest/app-chat/conversations') ||
                       urlStr.includes('/rest/app-chat/conversations/new'))) {
+            shouldIntercept = true;
+          } else if ((currentURL.includes('gemini.google.com') ||
+                      currentURL.includes('aistudio.google.com')) &&
+                     urlStr.includes('generativelanguage.googleapis.com')) {
             shouldIntercept = true;
           }
 
@@ -517,16 +678,52 @@ export default defineContentScript({
       newChatBtn?.addEventListener('click', clickHandler);
     };
 
+    // 設置滾動事件監聽，用於修復高亮消失問題
+    const setupScrollListener = (): void => {
+      let scrollTimeout: ReturnType<typeof setTimeout>;
+      
+      const scrollHandler = () => {
+        // 清除之前的計時器
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+        
+        // 設置新的計時器，在滾動停止後重新套用樣式
+        scrollTimeout = setTimeout(() => {
+          if (window.location.hostname.includes('aistudio.google.com')) {
+            logDebug('Content: 滾動停止，重新套用樣式以修復高亮消失問題');
+            applyStyles();
+            updateFloatingPanel();
+          }
+        }, 200); // 滾動停止 200ms 後執行
+      };
+
+      // 監聽視窗滾動事件
+      window.addEventListener('scroll', scrollHandler, { passive: true });
+      
+      // 也監聽可能的滾動容器
+      const scrollContainers = document.querySelectorAll('.scrollable, .overflow-auto, .overflow-y-auto');
+      scrollContainers.forEach(container => {
+        container.addEventListener('scroll', scrollHandler, { passive: true });
+      });
+    };
+
     // 初始化浮動面板功能
     const initializeFloatingPanel = (): void => {
       const currentURL = window.location.hostname;
       
       // 只在支援的網站啟用浮動面板
-      if (currentURL.includes('chatgpt.com') || currentURL.includes('grok.com')) {
+      if (
+        currentURL.includes('chatgpt.com') ||
+        currentURL.includes('grok.com') ||
+        currentURL.includes('gemini.google.com') ||
+        currentURL.includes('aistudio.google.com')
+      ) {
         createFloatingPanel();
         updateFloatingPanel();
         setupFetchInterception();
         setupClickListeners();
+        setupScrollListener(); // 新增滾動監聽器
         logDebug('Content: 浮動面板功能已初始化');
       }
     };
@@ -536,39 +733,173 @@ export default defineContentScript({
       throttleTimeout?: ReturnType<typeof setTimeout>;
     }
 
-    // 設置 MutationObserver 監聽 DOM 變化
-    function setupMutationObserver() {
-      // 監聽新訊息
-      const observer = new MutationObserver(() => {
-        // 為了避免過於頻繁地套用樣式，使用節流函數
-        if ((observer as CustomMutationObserver).throttleTimeout) return;
-        (observer as CustomMutationObserver).throttleTimeout = setTimeout(() => {
-          applyStyles(); // 使用當前保存的主題
-          updateFloatingPanel(); // 更新浮動面板
-          delete (observer as CustomMutationObserver).throttleTimeout;
-        }, 300); // 300毫秒內只執行一次
+    // 設置表單提交和按鍵監聽器 - 更有效率的事件驅動模式
+    function setupFormSubmissionListeners() {
+      const currentURL = window.location.hostname;
+      let submitTimeout: ReturnType<typeof setTimeout>;
+      
+      const handleMessageSubmission = () => {
+        // 防止短時間內重複觸發
+        if (submitTimeout) {
+          clearTimeout(submitTimeout);
+        }
+        
+        submitTimeout = setTimeout(() => {
+          logDebug('Content: 檢測到訊息提交，更新樣式和浮動面板');
+          applyStyles();
+          updateFloatingPanel();
+        }, 500); // 等待 DOM 更新完成
+      };
+
+      // 監聽表單提交事件
+      document.addEventListener('submit', (e) => {
+        const form = e.target as HTMLFormElement;
+        if (form && form.tagName === 'FORM') {
+          logDebug('Content: 檢測到表單提交');
+          handleMessageSubmission();
+        }
+      });
+
+      // 監聽 Enter 鍵提交 (針對不同網站的輸入框)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          const target = e.target as HTMLElement;
+          
+          // 檢查是否在相關的輸入區域
+          if (target && (
+            target.tagName === 'TEXTAREA' ||
+            target.contentEditable === 'true' ||
+            target.closest('[contenteditable="true"]') ||
+            target.closest('form') ||
+            target.closest('.input-area') ||
+            target.closest('.message-input')
+          )) {
+            logDebug('Content: 檢測到 Enter 鍵提交');
+            handleMessageSubmission();
+          }
+        }
+      });
+
+      // 針對特定網站的提交按鈕點擊監聽
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        let isSubmitButton = false;
+
+        if (currentURL.includes('chatgpt.com')) {
+          isSubmitButton = target.closest('[data-testid="send-button"]') !== null;
+        } else if (currentURL.includes('grok.com')) {
+          isSubmitButton = target.closest('button[type="submit"]') !== null ||
+                          target.closest('.send-button') !== null;
+        } else if (currentURL.includes('gemini.google.com')) {
+          isSubmitButton = target.closest('button[aria-label*="Send"]') !== null ||
+                          target.closest('.send-button') !== null;
+        } else if (currentURL.includes('aistudio.google.com')) {
+          isSubmitButton = target.closest('button[aria-label*="Send"]') !== null ||
+                          target.closest('.send-button') !== null ||
+                          target.closest('[data-testid="send"]') !== null;
+        }
+
+        if (isSubmitButton) {
+          logDebug('Content: 檢測到提交按鈕點擊');
+          handleMessageSubmission();
+        }
+      });
+    }
+
+    // 輕量級 MutationObserver 作為備用 - 只監聽關鍵變化
+    function setupLightweightObserver() {
+      const observer = new MutationObserver((mutations) => {
+        let needsUpdate = false;
+        
+        mutations.forEach(mutation => {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            // 檢查是否有新的訊息容器或相關元素被添加
+            mutation.addedNodes.forEach(node => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                const currentURL = window.location.hostname;
+                
+                // 檢查是否添加了新的訊息相關元素或包含訊息的容器
+                if (
+                  (currentURL.includes('chatgpt.com') && (
+                    element.closest('[data-message-author-role="user"]') ||
+                    element.querySelector('[data-message-author-role="user"]') ||
+                    element.matches('.bg-token-message-surface')
+                  )) ||
+                  (currentURL.includes('grok.com') && (
+                    element.closest('.bg-surface-l2') ||
+                    element.querySelector('.bg-surface-l2')
+                  )) ||
+                  (currentURL.includes('gemini.google.com') && (
+                    element.closest('.user-query-bubble-with-background') ||
+                    element.querySelector('.user-query-bubble-with-background')
+                  )) ||
+                  (currentURL.includes('aistudio.google.com') && (
+                    element.closest('.text-chunk') ||
+                    element.querySelector('.text-chunk') ||
+                    element.closest('.user-prompt-container') ||
+                    element.querySelector('.user-prompt-container')
+                  ))
+                ) {
+                  needsUpdate = true;
+                }
+              }
+            });
+          }
+        });
+
+        if (needsUpdate && !(observer as CustomMutationObserver).throttleTimeout) {
+          (observer as CustomMutationObserver).throttleTimeout = setTimeout(() => {
+            logDebug('Content: 輕量級觀察器檢測到新內容，更新樣式');
+            applyStyles();
+            updateFloatingPanel();
+            delete (observer as CustomMutationObserver).throttleTimeout;
+          }, 200);
+        }
       }) as CustomMutationObserver;
 
-      // 開始觀察整個文件
-      if (document.body) {
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['class']
-        });
-      } else {
-        logDebug('Body element not found, waiting for DOM content loaded');
-        document.addEventListener('DOMContentLoaded', () => {
-          observer.observe(document.body, {
+      // 只觀察訊息容器的變化，減少監聽範圍
+      const messageContainers = document.querySelectorAll(
+        '.conversation, .chat-container, .messages, .message-list, main'
+      );
+      
+      if (messageContainers.length > 0) {
+        messageContainers.forEach(container => {
+          observer.observe(container, {
             childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class']
+            subtree: true
           });
         });
+      } else {
+        // 如果找不到特定容器，監聽 body 但減少監聽選項
+        observer.observe(document.body, {
+          childList: true,
+          subtree: false // 不監聽子樹，減少資源消耗
+        });
       }
+      
+      logDebug('Content: 已設置輕量級觀察器');
     }
+
+    // 頁面載入完成後的自動上色
+    const initialPageStyling = () => {
+      // 等待頁面內容載入後立即套用樣式
+      const applyInitialStyles = () => {
+        logDebug('Content: 執行頁面載入後的自動上色');
+        applyStyles();
+        updateFloatingPanel();
+      };
+
+      // 多次嘗試確保捕獲到動態載入的內容
+      setTimeout(applyInitialStyles, 1000); // 1秒後
+      setTimeout(applyInitialStyles, 3000); // 3秒後
+      setTimeout(applyInitialStyles, 5000); // 5秒後 (確保所有動態內容都載入)
+      
+      // 針對 Google AI Studio 額外處理
+      if (window.location.hostname.includes('aistudio.google.com')) {
+        setTimeout(applyInitialStyles, 8000); // 8秒後再次確保
+      }
+    };
 
     // 確保初始化在 DOM 載入完成後執行
     const setupExtension = () => {
@@ -581,13 +912,17 @@ export default defineContentScript({
         try {
           initializeTheme().then(() => {
             logDebug('Content: 初始化主題成功');
+            // 主題初始化完成後立即執行自動上色
+            initialPageStyling();
           });
         } catch (error) {
           logDebug('Content: 初始化主題失敗', error);
           // 只有在第一次初始化失敗時才嘗試第二次
           setTimeout(() => {
             logDebug('Content: 初次失敗，再次嘗試初始化主題');
-            initializeTheme();
+            initializeTheme().then(() => {
+              initialPageStyling();
+            });
           }, 3000);
         }
       }, 2000);
@@ -597,8 +932,11 @@ export default defineContentScript({
         initializeFloatingPanel();
       }, 3000);
       
-      // 設置 MutationObserver 監聽 DOM 變化
-      setupMutationObserver();
+      // 設置事件驅動的監聽系統 (更有效率)
+      setupFormSubmissionListeners();
+      
+      // 設置輕量級觀察器作為備用
+      setupLightweightObserver();
     };
 
     // 如果 DOM 已經載入完成，立即運行設置；否則等待 DOMContentLoaded 事件
